@@ -29,7 +29,10 @@ class AccountViewSet(viewsets.ViewSet):
 
     @action(methods=['GET'], detail=False)
     def login_status(self, request):
-        data = {'has_logged_in': request.user.is_authenticated}
+        data = {
+            'has_logged_in': request.user.is_authenticated,
+            # 'id': request.META['REMOTE_ADDR'], # 虚拟机获得远程连接到它的ip地址
+        }
         if request.user.is_authenticated:
             data['user'] = UserSerializer(request.user).data
         return Response(data) # 默认status=200

@@ -2,6 +2,7 @@
 .vagrant
 Vagrantfile
 ./idea
+.pycharm_helpers
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
