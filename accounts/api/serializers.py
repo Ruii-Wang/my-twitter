@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers, exceptions
+from rest_framework.exceptions import ValidationError
 
 
 # serializer用处
@@ -17,10 +18,10 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        if User.objects.filter(username=data['username'].lower()).exists():
-            raise exceptions.ValidationError({
-                'username': 'This username has been occupied.'
-            })
+        username = data['username'].lower()
+        if not User.objects.filter(username=username).exists():
+            raise ValidationError({'username': 'User does not exist.'})
+        data['username'] = username
         return data
 
 
