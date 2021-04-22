@@ -46,6 +46,7 @@ class AccountViewSet(viewsets.ViewSet):
     def login(self, request):
         # get username and password from request
         # data就是用户post的request中的数据
+        # check request
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid(): # 如果登录出错
             return Response({
@@ -54,16 +55,10 @@ class AccountViewSet(viewsets.ViewSet):
                 "errors": serializer.errors,
             }, status=400)
 
-        # validation ok, login
+        # validation ok
+        # check password
         username = serializer.validated_data['username']
         password = serializer.validated_data['password']
-
-        if not User.objects.filter(username=username).exists():
-            return Response({
-                "success": False,
-                "message": "User does not exist.",
-            }, status=400)
-
         user = django_authenticate(username=username, password=password)
         if not user or user.is_anonymous:
             return Response({
@@ -71,6 +66,7 @@ class AccountViewSet(viewsets.ViewSet):
                 "message": "Username and password does not match.",
             }, status=400)
 
+        # login
         django_login(request, user)
         return Response({
             "success": True,
