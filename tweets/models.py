@@ -14,6 +14,11 @@ class Tweet(models.Model):
     # auto_mow_add是当创建的时候自动计算创建的时间
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        # 生成索引表单[user, created_at, id]
+        index_together = (('user', 'created_at'),)
+        ordering = ('user', '-created_at')
+
     @property
     def hours_to_now(self):
         # self.created_at是带有时区的
