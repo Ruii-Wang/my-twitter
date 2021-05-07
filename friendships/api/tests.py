@@ -10,8 +10,8 @@ FOLLOWINGS_URL = '/api/friendships/{}/followings/'
 class FriendshipApiTests(TestCase):
 
     def setUp(self):
-        # 匿名用户
-        self.anonymous_client = APIClient()
+        # 匿名用户 其创建已经挪到testcase当中
+        # self.anonymous_client = APIClient()
 
         # 登录用户
         self.ming = self.create_user('ming', 'ming@haha.com')
