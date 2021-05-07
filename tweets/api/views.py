@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from tweets.api.serializers import TweetSerializer, TweetSerializerForCreate
 from tweets.models import Tweet
+from newsfeeds.services import NewsFeedService
 
 
 class TweetViewSet(viewsets.GenericViewSet):
@@ -38,4 +39,7 @@ class TweetViewSet(viewsets.GenericViewSet):
             }, status=400)
         # save will trigger create method in TweetSerializerForCreate
         tweet = serializer.save()
+        # fanout这个方法需要较复杂的逻辑实现，而在view这一层中尽量做一些简单的显示视图的功能
+        # 对于复杂的逻辑实现放到service这一层中去提供
+        NewsFeedService.fanout_to_followers(tweet)
         return Response(TweetSerializer(tweet).data, status=201)
