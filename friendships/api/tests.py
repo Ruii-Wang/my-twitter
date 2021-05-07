@@ -70,7 +70,7 @@ class FriendshipApiTests(TestCase):
         self.assertEqual(Friendship.objects.count(), count+1)
 
         # follow non-exist user
-        response = self.rui_client.post(FOLLOW_URL.format(8))
+        response = self.rui_client.post(FOLLOW_URL.format(100))
         self.assertEqual(response.status_code, 404)
 
     def test_unfollow(self):
