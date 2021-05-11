@@ -18,6 +18,37 @@ class CommentApiTests(TestCase):
 
         self.tweet = self.create_tweet(self.rui)
 
+    def test_list(self):
+        # 必须带 tweet_id
+        response = self.anonymous_client.get(COMMENT_URL)
+        self.assertEqual(response.status_code, 400)
+
+        # 带了tweet_id可以访问
+        # 一开始没有评论
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['comments']), 0)
+
+        # 评论按照时间顺序打开
+        self.create_comment(self.rui, self.tweet, '1')
+        self.create_comment(self.ming, self.tweet, '2')
+        self.create_comment(self.ming, self.create_tweet(self.ming), '3')
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+        })
+        self.assertEqual(len(response.data['comments']), 2)
+        self.assertEqual(response.data['comments'][0]['content'], '1')
+        self.assertEqual(response.data['comments'][1]['content'], '2')
+
+        # 同时提供user_id和tweet_id只有tweet_id会在filter中生效
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+            'user_id': self.rui.id,
+        })
+        self.assertEqual(len(response.data['comments']), 2)
+
     def test_create(self):
         # 匿名不可以创建
         response = self.anonymous_client.post(COMMENT_URL)
@@ -105,3 +136,4 @@ class CommentApiTests(TestCase):
         response = self.rui_client.delete(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Comment.objects.count(), count-1)
+
