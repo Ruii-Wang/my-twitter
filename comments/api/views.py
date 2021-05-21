@@ -30,7 +30,11 @@ class CommentViewSet(viewsets.GenericViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         comments = self.filter_queryset(queryset).order_by('created_at')
-        serializer = CommentSerializer(comments, many=True)
+        serializer = CommentSerializer(
+            comments,
+            context = {'request': request},
+            many=True,
+        )
         return Response({
             'comments': serializer.data,
         }, status=status.HTTP_200_OK)
@@ -53,7 +57,10 @@ class CommentViewSet(viewsets.GenericViewSet):
         # save的方法会触发serializer里面的create方法，点进save的具体实现里面可以看到
         comment = serializer.save()
         return Response(
-            CommentSerializer(comment).data,
+            CommentSerializer(
+                comment,
+                context = {'request': request},
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -72,7 +79,10 @@ class CommentViewSet(viewsets.GenericViewSet):
         # save 是根据 instance 参数有没有传来巨鼎是触发 create 还是 update
         comment = serializer.save()
         return Response(
-            CommentSerializer(comment).data,
+            CommentSerializer(
+                comment,
+                context = {'request': request},
+            ).data,
             status=status.HTTP_200_OK,
         )
 
