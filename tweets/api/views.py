@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from tweets.api.serializers import (
     TweetSerializer,
     TweetSerializerForCreate,
-    TweetSerializerWithComments,
+    TweetSerializerForDetail,
 )
 from tweets.models import Tweet
 from newsfeeds.services import NewsFeedService
@@ -24,12 +24,20 @@ class TweetViewSet(viewsets.GenericViewSet):
         # <Homework 1> 通过某个query参数with_all_comments来决定是否要带上所有comments
         # <Homework 2> 通过某个query参数with_preview_comments来决定是否需要带上前三条comments
         tweet = self.get_object()
-        return Response(TweetSerializerWithComments(tweet).data)
+        serializer = TweetSerializerForDetail(
+            tweet,
+            context={'request': request},
+        )
+        return Response(serializer.data)
 
     @required_params(params=['user_id'])
     def list(self, request, *args, **kwargs):
         tweets = Tweet.objects.filter(user_id = request.query_params['user_id']).order_by('-created_at')
-        serializer = TweetSerializer(tweets, many=True) # 传进去是是QuerySet，返回的是一个list of dict
+        serializer = TweetSerializer(
+            tweets,
+            context = {'request': request},
+            many=True,
+        ) # 传进去是是QuerySet，返回的是一个list of dict
         # 一般来说，json格式的response默认都要用的hash格式
         # 而不能用list的格式（约定俗成）
         # 所以在最外面需要套上一个dict
@@ -51,4 +59,7 @@ class TweetViewSet(viewsets.GenericViewSet):
         # fanout这个方法需要较复杂的逻辑实现，而在view这一层中尽量做一些简单的显示视图的功能
         # 对于复杂的逻辑实现放到service这一层中去提供
         NewsFeedService.fanout_to_followers(tweet)
-        return Response(TweetSerializer(tweet).data, status=201)
+        return Response(
+            TweetSerializer(tweet, context={'request': request}).data,
+            status=201,
+        )
