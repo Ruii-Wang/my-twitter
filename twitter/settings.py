@@ -43,9 +43,11 @@ INSTALLED_APPS = [
     # third party apps
     'rest_framework',
     'django_filters',
+    'debug_toolbar',
+    'notifications',
 
     # project apps
-    'debug_toolbar',
+    'accounts',
     'tweets',
     'friendships',
     'newsfeeds',
