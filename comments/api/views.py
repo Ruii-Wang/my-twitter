@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from comments.api.permissions import IsObjectOwner
+from inbox.services import NotificationService
 from comments.models import Comment
 from comments.api.serializers import (
     CommentSerializer,
@@ -56,6 +57,7 @@ class CommentViewSet(viewsets.GenericViewSet):
 
         # save的方法会触发serializer里面的create方法，点进save的具体实现里面可以看到
         comment = serializer.save()
+        NotificationService.send_comment_notification(comment)
         return Response(
             CommentSerializer(
                 comment,
