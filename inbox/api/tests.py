@@ -113,3 +113,52 @@ class NotificationApiTests(TestCase):
         self.assertEqual(response.data['count'], 1)
         response = self.rui_client.get(NOTIFICATION_URL, {'unread': False})
         self.assertEqual(response.data['count'], 1)
+
+    def test_update(self):
+        self.ming_client.post(LIKE_URL, {
+            'content_type': 'tweet',
+            'object_id': self.rui_tweet.id,
+        })
+        comment = self.create_comment(self.rui, self.rui_tweet)
+        self.ming_client.post(LIKE_URL, {
+            'content_type': 'comment',
+            'object_id': comment.id,
+        })
+        notification = self.rui.notifications.first()
+
+        url = '/api/notifications/{}/'.format(notification.id)
+        # post不行，要用put
+        response = self.ming_client.post(url, {'unread': False})
+        self.assertEqual(response.status_code, 405)
+
+        # 不可以被其他人改变notification状态
+        response = self.anonymous_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 403)
+
+        # 因为queryset是按照当前登录用户来，所以返回404而不是403
+        response = self.ming_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 404)
+
+        # 成功标记为已读
+        unread_url = '/api/notifications/unread-count/'
+        response = self.rui_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 2)
+        response = self.rui_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 200)
+        response = self.rui_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 1)
+
+        # 再标记为未读
+        response = self.rui_client.put(url, {'unread': True})
+        response = self.rui_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 2)
+
+        # 必须带unread
+        response = self.rui_client.put(url, {'verb': 'newverb'})
+        self.assertEqual(response.status_code, 400)
+
+        # 不可以修改其他信息
+        response = self.rui_client.put(url, {'verb': 'newverb', 'unread': False})
+        self.assertEqual(response.status_code, 200)
+        notification.refresh_from_db()
+        self.assertNotEqual(notification.verb, 'newverb')
