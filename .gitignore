@@ -1,6 +1,7 @@
 *.box
 .vagrant
 Vagrantfile
+media/
 ./idea
 .pycharm_helpers
 
