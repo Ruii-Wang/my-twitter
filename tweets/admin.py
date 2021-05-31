@@ -1,14 +1,26 @@
 from django.contrib import admin
-# Register your models here.
-from tweets.models import Tweet
+from tweets.models import Tweet, TweetPhoto
 
 
 @admin.register(Tweet)
 class TweetAdmin(admin.ModelAdmin):
     # 按照data_hierarchy进行筛选
-    data_hierarchy = 'created_at'
+    date_hierarchy = 'created_at'
     list_display = (
         'created_at',
         'user',
         'content',
     )
+
+@admin.register(TweetPhoto)
+class TweetPhotoAdmin(admin.ModelAdmin):
+    list_display = (
+        'tweet',
+        'user',
+        'file',
+        'status',
+        'has_deleted',
+        'created_at',
+    )
+    list_filter = ('status', 'has_deleted')
+    date_hierarchy = 'created_at'
