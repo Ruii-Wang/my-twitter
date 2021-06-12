@@ -35,10 +35,24 @@ class FriendshipSerializerForCreate(serializers.ModelSerializer):
         )
 
 
+class FollowingUserIdSetMixin:
+
+    @property
+    def following_user_id_set(self: serializers.ModelSerializer):
+        if self.context['request'].user.is_anonymous:
+            return {}
+        if hasattr(self, '_cached_following_user_id_set'):
+            return self._cached_following_user_id_set
+        user_id_set = FriendshipService.get_following_user_id_set(
+            self.context['request'].user.id,
+        )
+        setattr(self, '_cached_following_user_id_set', user_id_set)
+        return user_id_set
+
 
 # 可以通过 source = xxx 指定去访问每个 model instance 的XXX方法
 # 即 model_instance.xxx 来获取数据
-class FollowerSerializer(serializers.ModelSerializer):
+class FollowerSerializer(serializers.ModelSerializer, FollowingUserIdSetMixin):
     user = UserSerializerForFriendship(source='from_user')
     created_at = serializers.DateTimeField()
     has_followed = serializers.SerializerMethodField()
@@ -48,13 +62,10 @@ class FollowerSerializer(serializers.ModelSerializer):
         fields = ('user', 'created_at', 'has_followed')
 
     def get_has_followed(self, obj):
-        if self.context['request'].user.is_anonymous:
-            return False
-        # 产生 N + 1 queries
-        return FriendshipService.has_followed(self.context['request'].user, obj.from_user)
+        return obj.from_user_id in self.following_user_id_set
 
 
-class FollowingSerializer(serializers.ModelSerializer):
+class FollowingSerializer(serializers.ModelSerializer, FollowingUserIdSetMixin):
     user = UserSerializerForFriendship(source='to_user')
     created_at = serializers.DateTimeField()
     has_followed = serializers.SerializerMethodField()
@@ -64,7 +75,4 @@ class FollowingSerializer(serializers.ModelSerializer):
         fields = ('user', 'created_at', 'has_followed')
 
     def get_has_followed(self, obj):
-        if self.context['request'].user.is_anonymous:
-            return False
-        # 产生 N + 1 queries
-        return FriendshipService.has_followed(self.context['request'].user, obj.to_user)
+        return obj.to_user_id in self.following_user_id_set
