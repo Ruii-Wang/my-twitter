@@ -9,7 +9,7 @@ from likes.services import LikeService
 from likes.api.serializers import LikeSerializer
 
 class TweetSerializer(serializers.ModelSerializer):
-    user = UserSerializerForTweet() # who creates this tweet
+    user = UserSerializerForTweet(source = 'cached_user') # who creates this tweet
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     has_liked = serializers.SerializerMethodField()
@@ -79,7 +79,6 @@ class TweetSerializerForCreate(serializers.ModelSerializer):
 
 
 class TweetSerializerForDetail(TweetSerializer):
-    user = UserSerializerForTweet()
     likes = LikeSerializer(source='like_set', many=True)
     comments = CommentSerializer(source='comment_set', many=True)
 

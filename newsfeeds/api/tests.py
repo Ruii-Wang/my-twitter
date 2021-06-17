@@ -10,6 +10,7 @@ FOLLOW_URL = '/api/friendships/{}/follow/'
 class NewsFeedApiTests(TestCase):
 
     def setUp(self):
+        self.clear_cache()
         self.rui = self.create_user('rui', 'rui@haha.com')
         self.rui_client = APIClient()
         self.rui_client.force_authenticate(self.rui)
@@ -100,3 +101,29 @@ class NewsFeedApiTests(TestCase):
         self.assertEqual(response.data['has_next_page'], False)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['id'], new_newsfeed.id)
+
+    def test_user_cache(self):
+        profile = self.ming.profile
+        profile.nickname = 'jelly'
+        profile.save()
+
+        self.assertEqual(self.rui.username, 'rui')
+        self.create_newsfeed(self.ming, self.create_tweet(self.rui))
+        self.create_newsfeed(self.ming, self.create_tweet(self.ming))
+
+        response = self.ming_client.get(NEWSFEEDS_URL)
+        results = response.data['results']
+        self.assertEqual(results[0]['tweet']['user']['username'], 'ming')
+        self.assertEqual(results[0]['tweet']['user']['nickname'], 'jelly')
+        self.assertEqual(results[1]['tweet']['user']['username'], 'rui')
+
+        self.rui.username = 'michael'
+        self.rui.save()
+        profile.nickname = 'jelly_away'
+        profile.save()
+
+        response = self.ming_client.get(NEWSFEEDS_URL)
+        results = response.data['results']
+        self.assertEqual(results[0]['tweet']['user']['username'], 'ming')
+        self.assertEqual(results[0]['tweet']['user']['nickname'], 'jelly_away')
+        self.assertEqual(results[1]['tweet']['user']['username'], 'michael')
