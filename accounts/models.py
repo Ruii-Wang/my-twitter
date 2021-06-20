@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, pre_delete
-from accounts.listeners import user_changed, profile_changed
+from accounts.listeners import profile_changed
+from utils.listeners import invalidate_object_cache
 
 class UserProfile(models.Model):
     # OneToOne field会创建一个unique index，确保不会有多个UserProfile指向同一个user
@@ -36,9 +37,9 @@ User.profile = property(get_profile)
 
 # hook up listeners to invalidate cache
 # user出现删除的时候发的信号
-pre_delete.connect(user_changed, sender = User)
+pre_delete.connect(invalidate_object_cache, sender = User)
 # user出现修改的时候发的信号
-post_save.connect(user_changed, sender = User)
+post_save.connect(invalidate_object_cache, sender = User)
 
 pre_delete.connect(profile_changed, sender = UserProfile)
 post_save.connect(profile_changed, sender = UserProfile)
