@@ -1,6 +1,6 @@
 from utils.redis_client import RedisClient
 from utils.redis_serializers import DjangoModelSerializer
-from twitter import settings
+from django.conf import settings
 
 class RedisHelper:
 
@@ -8,7 +8,11 @@ class RedisHelper:
     def _load_objects_to_cache(cls, key, objects):
         conn = RedisClient.get_connection()
         serialized_list = []
-        for obj in objects:
+
+        # 最多只 cache REDIS_LIST_LENGTH_LIMIT 个 objects
+        # 超过这个限制的 objects 就去数据库里面读取。一般这个限制会比较大，比如200
+        # 因此翻页翻到 200 的用户访问量会比较少，从数据库读取也不是大问题
+        for obj in objects[:settings.REDIS_LIST_LENGTH_LIMIT]:
             serialized_data = DjangoModelSerializer.serialize(obj)
             serialized_list.append(serialized_data)
         if serialized_list:
@@ -45,3 +49,4 @@ class RedisHelper:
             return
         serialized_data = DjangoModelSerializer.serialize(obj)
         conn.lpush(key, serialized_data)
+        conn.ltrim(key, 0, settings.REDIS_LIST_LENGTH_LIMIT - 1)
