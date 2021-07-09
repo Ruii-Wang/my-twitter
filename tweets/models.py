@@ -5,7 +5,7 @@ from likes.models import Like
 from utils.time_helpers import utc_now
 from tweets.constants import TweetPhotoStatus, TWEET_PHOTO_STATUS_CHOICES
 from utils.memcached_helper import MemcachedHelper
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from utils.listeners import invalidate_object_cache
 from tweets.listeners import push_tweet_to_cache
 
@@ -20,6 +20,11 @@ class Tweet(models.Model):
     content = models.CharField(max_length=255)
     # auto_mow_add是当创建的时候自动计算创建的时间
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # 新增的field一定要设置null=True，否则default=0会便利整个表单去设置
+    # 导致Migration过程非常慢，从而把整张表单锁死，从而正常用户无法创建新的tweets
+    likes_count = models.IntegerField(default=0, null=True)
+    comments_count = models.IntegerField(default=0, null=True)
 
     class Meta:
         # 生成索引表单[user, created_at, id]
@@ -88,4 +93,5 @@ class TweetPhoto(models.Model):
 
 
 post_save.connect(invalidate_object_cache, sender = Tweet)
-post_save.connect(push_tweet_to_cache, sender=Tweet)
+pre_delete.connect(invalidate_object_cache, sender = Tweet)
+post_save.connect(push_tweet_to_cache, sender = Tweet)
