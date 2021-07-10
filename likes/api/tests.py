@@ -1,4 +1,5 @@
 from testing.testcases import TestCase
+from rest_framework.test import APIClient
 
 LIKE_BASE_URL = '/api/likes/'
 LIKE_CANCEL_URL = '/api/likes/cancel/'
@@ -10,9 +11,11 @@ NEWSFEED_LIST_API = '/api/newsfeeds/'
 class LikeApiTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
         self.rui, self.rui_client = self.create_user_and_client('rui')
         self.ming, self.ming_client = self.create_user_and_client('ming')
+
+    def tearDown(self):
+        self.clear_cache()
 
     def test_tweet_likes(self):
         tweet = self.create_tweet(self.rui)
@@ -49,6 +52,7 @@ class LikeApiTests(TestCase):
         # get is not allowed
         response = self.rui_client.get(LIKE_BASE_URL, data)
         self.assertEqual(response.status_code, 405)
+
 
         # wrong content_type
         response = self.rui_client.post(LIKE_BASE_URL, {
@@ -141,9 +145,10 @@ class LikeApiTests(TestCase):
     def test_likes_in_comments_api(self):
         tweet = self.create_tweet(self.rui)
         comment = self.create_comment(self.rui, tweet)
+        anonymous_client = APIClient()
 
         # test anonymous
-        response = self.anonymous_client.get(COMMENT_LIST_API, {'tweet_id': tweet.id})
+        response = anonymous_client.get(COMMENT_LIST_API, {'tweet_id': tweet.id})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['comments'][0]['has_liked'], False)
         self.assertEqual(response.data['comments'][0]['likes_count'], 0)
@@ -202,3 +207,61 @@ class LikeApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['likes'][0]['user']['id'], self.rui.id)
         self.assertEqual(response.data['likes'][1]['user']['id'], self.ming.id)
+
+    def test_likes_count(self):
+        tweet = self.create_tweet(self.rui)
+        data = {'content_type': 'tweet', 'object_id': tweet.id}
+        self.rui_client.post(LIKE_BASE_URL, data)
+
+        tweet_url = TWEET_DETAIL_API.format(tweet.id)
+        response = self.rui_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 1)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 1)
+
+        # ming canceled likes
+        self.rui_client.post(LIKE_BASE_URL + 'cancel/', data)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 0)
+        response = self.ming_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 0)
+
+    def test_likes_count_with_cache(self):
+        tweet = self.create_tweet(self.rui)
+        self.create_newsfeed(self.rui, tweet)
+        self.create_newsfeed(self.ming, tweet)
+
+        data = {'content_type': 'tweet', 'object_id': tweet.id}
+        tweet_url = TWEET_DETAIL_API.format(tweet.id)
+        for i in range(3):
+            _, client = self.create_user_and_client('someone{}'.format(i))
+            client.post(LIKE_BASE_URL, data)
+            # check tweet api
+            response = client.get(tweet_url)
+            self.assertEqual(response.data['likes_count'], i + 1)
+            tweet.refresh_from_db()
+            self.assertEqual(tweet.likes_count, i + 1)
+
+        self.ming_client.post(LIKE_BASE_URL, data)
+        response = self.ming_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 4)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 4)
+
+        # check newsfeed api
+        newsfeed_url = '/api/newsfeeds/'
+        response = self.rui_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 4)
+        response = self.ming_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 4)
+
+        # ming canceled likes
+        self.ming_client.post(LIKE_BASE_URL + 'cancel/', data)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 3)
+        response = self.ming_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 3)
+        response = self.rui_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 3)
+        response = self.ming_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 3)
