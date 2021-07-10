@@ -8,10 +8,12 @@ from newsfeeds.models import NewsFeed
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import caches
 from friendships.models import Friendship
+from utils.redis_client import RedisClient
 
 class TestCase(DjangoTestCase):
 
     def clear_cache(self):
+        RedisClient.clear()
         caches['testing'].clear()
 
     @property

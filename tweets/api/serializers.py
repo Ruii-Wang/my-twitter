@@ -7,6 +7,7 @@ from accounts.api.serializers import UserSerializerForTweet
 from comments.api.serializers import CommentSerializer
 from likes.services import LikeService
 from likes.api.serializers import LikeSerializer
+from utils.redis_helper import RedisHelper
 
 class TweetSerializer(serializers.ModelSerializer):
     user = UserSerializerForTweet(source = 'cached_user') # who creates this tweet
@@ -29,12 +30,17 @@ class TweetSerializer(serializers.ModelSerializer):
         )
 
     def get_likes_count(self, obj):
-        # 我们自己定义的属性
-        return obj.like_set.count()
+        # select count(*) -> redis get
+        # N + 1 queries
+        # N 如果是 db queries -> 不可以接受
+        # N 如果是 redis/memcached queries -> 可以接受
+        return RedisHelper.get_count(obj, 'likes_count')
+        # return obj.like_set.count()
 
     def get_comments_count(self, obj):
         # Django定义的反查机制
-        return obj.comment_set.count()
+        return RedisHelper.get_count(obj, 'comments_count')
+        # return obj.comment_set.count()
 
     def get_has_liked(self, obj):
         # current login user can be obtained from self.context['request'].user
