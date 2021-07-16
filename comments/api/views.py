@@ -10,6 +10,8 @@ from comments.api.serializers import (
     CommentSerializerForUpdate,
 )
 from utils.decorators import required_params
+from ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 
 class CommentViewSet(viewsets.GenericViewSet):
     # 只实现list, create, update, destroy 的方法
@@ -28,9 +30,10 @@ class CommentViewSet(viewsets.GenericViewSet):
         return [AllowAny()]
 
     @required_params(params=['tweet_id'])
+    @method_decorator(ratelimit(key = 'user', rate = '3/m', method = 'GET', block = True))
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        comments = self.filter_queryset(queryset).order_by('created_at')
+        comments = self.filter_queryset(queryset).prefetch_related('user').order_by('created_at')
         serializer = CommentSerializer(
             comments,
             context = {'request': request},
@@ -40,6 +43,7 @@ class CommentViewSet(viewsets.GenericViewSet):
             'comments': serializer.data,
         }, status=status.HTTP_200_OK)
 
+    @method_decorator(ratelimit(key='user', rate='3/s', method='POST', block=True))
     def create(self, request, *args, **kwargs):
         data = {
             'user_id': request.user.id,
@@ -66,6 +70,7 @@ class CommentViewSet(viewsets.GenericViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @method_decorator(ratelimit(key='user', rate='3/s', method='POST', block=True))
     def update(self, request, *args, **kwargs):
         # get_object 是DRF包装的一个函数，会在找不到的时候，raise 404 error
         # 所以这里无需做额外的判断
@@ -88,6 +93,7 @@ class CommentViewSet(viewsets.GenericViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @method_decorator(ratelimit(key='user', rate='5/s', method='POST', block=True))
     def destroy(self, request, *args, **kwargs):
         comment = self.get_object()
         comment.delete()

@@ -11,6 +11,8 @@ from newsfeeds.services import NewsFeedService
 from utils.decorators import required_params
 from utils.paginations import EndlessPagination
 from tweets.services import TweetService
+from django.utils.decorators import method_decorator
+from ratelimit.decorators import ratelimit
 
 
 class TweetViewSet(viewsets.GenericViewSet):
@@ -23,6 +25,7 @@ class TweetViewSet(viewsets.GenericViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    @method_decorator(ratelimit(key='user_or_ip', rate='5/s', method='GET', block=True))
     def retrieve(self, request, *args, **kwargs):
         # <Homework 1> 通过某个query参数with_all_comments来决定是否要带上所有comments
         # <Homework 2> 通过某个query参数with_preview_comments来决定是否需要带上前三条comments
@@ -57,6 +60,8 @@ class TweetViewSet(viewsets.GenericViewSet):
         # 所以在最外面需要套上一个dict
         return self.get_paginated_response(serializer.data)
 
+    @method_decorator(ratelimit(key='user', rate='1/s', method='POST', block=True))
+    @method_decorator(ratelimit(key='user', rate='5/m', method='POST', block=True))
     def create(self, request):
         serializer = TweetSerializerForCreate(
             data = request.data,

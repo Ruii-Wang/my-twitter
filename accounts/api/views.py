@@ -17,6 +17,8 @@ from django.contrib.auth import (
     logout as django_logout,
     authenticate as django_authenticate,
 )
+from ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -32,6 +34,7 @@ class AccountViewSet(viewsets.ViewSet):
     serializer_class = SignupSerializer
 
     @action(methods=['GET'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='GET', block=True))
     def login_status(self, request):
         data = {
             'has_logged_in': request.user.is_authenticated,
@@ -42,11 +45,13 @@ class AccountViewSet(viewsets.ViewSet):
         return Response(data) # 默认status=200
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def logout(self, request):
         django_logout(request)
         return Response({'success': True}) # 默认status=200
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def login(self, request):
         # get username and password from request
         # data就是用户post的request中的数据
@@ -78,6 +83,7 @@ class AccountViewSet(viewsets.ViewSet):
         })
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def signup(self, request):
         serializer = SignupSerializer(data=request.data)
         if not serializer.is_valid():
