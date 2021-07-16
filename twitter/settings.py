@@ -205,6 +205,15 @@ REDIS_DB = 0 if TESTING else 1
 REDIS_KEY_EXPIRE_TIME = 7 * 86400 # in seconds
 REDIS_LIST_LENGTH_LIMIT = 200 if not TESTING else 20
 
+# Celery Configuration Options
+# 使用如下命令把worker进程（只执行异步任务的进程，可以在不同的机器上）单独运行
+#     celery -A twitter worker -l INFO
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2' if not TESTING else 'redis://127.0.0.1:6379/0'
+CELERY_TIMEZONE = 'UTC'
+# 是否需要启动worker的进程，当前设置为testing的时候不要启动，即不采用异步方式执行，而是采用同步方式执行
+CELERY_TASK_ALWAYS_EAGER = TESTING
+
+
 try:
     from .local_settings import *
 except:
