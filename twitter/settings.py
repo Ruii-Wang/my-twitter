@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+from kombu import Queue
 from pathlib import Path
 
 import sys
@@ -212,6 +213,10 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2' if not TESTING else 'redis://127.
 CELERY_TIMEZONE = 'UTC'
 # 是否需要启动worker的进程，当前设置为testing的时候不要启动，即不采用异步方式执行，而是采用同步方式执行
 CELERY_TASK_ALWAYS_EAGER = TESTING
+CELERY_QUEUES = (
+    Queue('default', routing_key = 'default'),
+    Queue('newsfeeds', routing_key = 'newsfeeds'),
+)
 
 
 try:
