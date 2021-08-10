@@ -4,6 +4,11 @@ Vagrantfile
 media/
 ./idea
 .pycharm_helpers
+hbase-2.4.4/
+hbase-2.4.4-bin.tar.gz
+jdk-8u291-linux-x64.tar.gz
+thrift-0.14.2.tar.gz
+thrift-0.14.2/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
