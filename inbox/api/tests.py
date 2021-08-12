@@ -8,7 +8,7 @@ NOTIFICATION_URL = '/api/notifications/'
 class NotificationTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(NotificationTests, self).setUp()
         self.rui, self.rui_client = self.create_user_and_client('rui')
         self.ming, self.ming_client = self.create_user_and_client('ming')
         self.ming_tweet = self.create_tweet(self.ming)

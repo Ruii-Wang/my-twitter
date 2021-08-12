@@ -12,7 +12,7 @@ FOLLOW_URL = '/api/friendships/{}/follow/'
 class NewsFeedApiTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(NewsFeedApiTests, self).setUp()
         self.rui = self.create_user('rui', 'rui@haha.com')
         self.rui_client = APIClient()
         self.rui_client.force_authenticate(self.rui)
