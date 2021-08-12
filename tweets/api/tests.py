@@ -13,7 +13,7 @@ TWEET_RETRIEVE_API = '/api/tweets/{}/'
 class TweetApiTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(TweetApiTests, self).setUp()
         # 匿名用户 其创建已经挪到testcase当中
         # self.anonymous_client = APIClient()
 

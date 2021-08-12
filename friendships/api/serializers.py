@@ -7,13 +7,9 @@ from friendships.services import FriendshipService
 from accounts.services import UserService
 
 
-class FriendshipSerializerForCreate(serializers.ModelSerializer):
+class FriendshipSerializerForCreate(serializers.Serializer):
     from_user_id = serializers.IntegerField()
     to_user_id = serializers.IntegerField()
-
-    class Meta:
-        model = Friendship
-        fields = ('from_user_id', 'to_user_id')
 
     def validate(self, attrs):
         # 自己无法关注自己
@@ -34,6 +30,9 @@ class FriendshipSerializerForCreate(serializers.ModelSerializer):
             from_user_id=from_user_id,
             to_user_id=to_user_id,
         )
+
+    def update(self, instance, validated_data):
+        pass
 
 
 class BaseFriendshipSerializer(serializers.Serializer):

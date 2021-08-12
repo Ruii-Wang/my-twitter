@@ -15,7 +15,7 @@ class LikeApiTests(TestCase):
         self.ming, self.ming_client = self.create_user_and_client('ming')
 
     def tearDown(self):
-        self.clear_cache()
+        super(LikeApiTests, self).tearDown()
 
     def test_tweet_likes(self):
         tweet = self.create_tweet(self.rui)
